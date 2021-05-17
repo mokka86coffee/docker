@@ -1,12 +1,51 @@
 version: '3'
 
 services:
+  froontend:
+    build: ./redux-frontend
+    command: npm start
+    container_name: frontend
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes:
+    - ./redux-frontend/src:/usr/src/frontend/src
+
   api:
     build: ./api
+    command: npm start
     container_name: api
-    depends_on: api_db
     environment:
-      -
+      - PORT=3001
     ports:
       - '3001:3001'
     restart: unless-stopped
+
+  auth:
+    build: ./auth
+    command: npm start
+    container_name: auth
+    depends_on:
+      - auth_db
+    environment:
+      - PORT=3002
+      - MONGO_URL=mongodb://auth_db:27017/auth
+    ports:
+      - '3002:3002'
+    restart: unless-stopped
+
+  auth_db:
+    image: mongo:latest
+    container_name: auth_db
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - froontend
